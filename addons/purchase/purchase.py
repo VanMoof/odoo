@@ -1429,6 +1429,15 @@ class procurement_order(osv.osv):
             return supplierinfo.browse(cr, uid, company_supplier[0], context=context).name
         return procurement.product_id.seller_id
 
+    def _get_product_supplier_min_qty(self, cr, uid, procurement, context=None):
+        """ Return the main supplier's minimum quantity for the procurement's product """
+        supplierinfo = self.pool['product.supplierinfo']
+        company_supplier = supplierinfo.search(cr, uid,
+            [('product_tmpl_id', '=', procurement.product_id.product_tmpl_id.id), ('company_id', '=', procurement.company_id.id)], limit=1, context=context)
+        if company_supplier:
+            return supplierinfo.browse(cr, uid, company_supplier[0], context=context).min_qty
+        return procurement.product_id.seller_id.min_qty if procurement.product_id.seller_id else 0.0
+
     def _get_po_line_values_from_proc(self, cr, uid, procurement, partner, company, schedule_date, context=None):
         if context is None:
             context = {}
@@ -1438,7 +1447,10 @@ class procurement_order(osv.osv):
         acc_pos_obj = self.pool.get('account.fiscal.position')
         po_obj = self.pool.get('purchase.order')
 
-        seller_qty = procurement.product_id.seller_qty if procurement.location_id.usage != 'customer' else 0.0
+        if procurement.location_id.usage != 'customer':
+            seller_qty = self._get_product_supplier_min_qty(cr, uid, procurement, context=context)
+        else:
+            seller_qty = 0.0
         pricelist_id = partner.property_product_pricelist_purchase.id
         uom_id = procurement.product_id.uom_po_id.id
         qty = uom_obj._compute_qty(cr, uid, procurement.product_uom.id, procurement.product_qty, uom_id)
