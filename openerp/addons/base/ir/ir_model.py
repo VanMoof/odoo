@@ -163,6 +163,10 @@ class ir_model(osv.osv):
 
     def _drop_table(self, cr, uid, ids, context=None):
         for model in self.browse(cr, uid, ids, context):
+            # Custom: do not drop tables or columns
+            _logger.warn("Not dropping the table or view of model %s", model.model)
+            continue
+
             model_pool = self.pool[model.model]
             cr.execute('select relkind from pg_class where relname=%s', (model_pool._table,))
             result = cr.fetchone()
@@ -321,6 +325,10 @@ class ir_model_fields(osv.osv):
 
     def _drop_column(self, cr, uid, ids, context=None):
         for field in self.browse(cr, uid, ids, context):
+            # Custom: do not drop tables or columns
+            _logger.warn("Not dropping the column of field %s of model %s", field.name, field.model)
+            continue
+
             if field.name in MAGIC_COLUMNS:
                 continue
             model = self.pool[field.model]
