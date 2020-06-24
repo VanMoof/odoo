@@ -100,14 +100,13 @@ class Graph(dict):
 
 
     def __iter__(self):
-        level = 0
-        done = set(self.keys())
-        while done:
-            level_modules = sorted((name, module) for name, module in self.items() if module.depth==level)
-            for name, module in level_modules:
-                done.remove(name)
-                yield module
-            level += 1
+        modules = sorted(
+            [(name, module) for name, module in self.items()],
+            key=lambda item: (item[1].depth, item[0]))
+        for name, module in modules:
+            _logger.debug('%s, %s', module.depth, name)
+        for _name, module in modules:
+            yield module
 
     def __str__(self):
         return '\n'.join(str(n) for n in self if n.depth == 0)
@@ -143,7 +142,7 @@ class Node(object):
 
     def add_child(self, name, info):
         node = Node(name, self.graph, info)
-        node.depth = self.depth + 1
+        node.depth = self.depth + max(1, int(info['sequence']))
         if node not in self.children:
             self.children.append(node)
         for attr in ('init', 'update', 'demo'):
@@ -158,9 +157,6 @@ class Node(object):
             tools.config[name][self.name] = 1
             for child in self.children:
                 setattr(child, name, value)
-        if name == 'depth':
-            for child in self.children:
-                setattr(child, name, value + 1)
 
     def __iter__(self):
         return itertools.chain(
