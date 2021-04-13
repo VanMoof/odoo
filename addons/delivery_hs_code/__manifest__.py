@@ -15,6 +15,6 @@ Set back field hs_code on pruduct template.
     'data': [
         'views/product_template_view.xml',
     ],
-    'installable': True,
-    'auto_install': True,
+    'installable': False,
+    'auto_install': False,
 }
