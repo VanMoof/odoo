@@ -208,8 +208,16 @@ def create_unique_index(cr, indexname, tablename, expressions):
 
 def drop_index(cr, indexname, tablename):
     """ Drop the given index if it exists. """
-    cr.execute('DROP INDEX IF EXISTS "{}"'.format(indexname))
-    _schema.debug("Table %r: dropped index %r", tablename, indexname)
+    # Custom: do not drop indexes
+    # Odoo will happily drop any index that is defined in any other branch of
+    # the module dependency chain than that which is being upgraded.
+    # cr.execute('DROP INDEX IF EXISTS "{}"'.format(indexname))
+    cr.execute(
+        "SELECT 1 FROM pg_indexes WHERE tablename = %s AND indexname = %s",
+        (tablename, indexname)
+    )
+    if cr.fetchone():
+        _schema.debug("Table %r: not dropping index %r", tablename, indexname)
 
 def drop_view_if_exists(cr, viewname):
     cr.execute("DROP view IF EXISTS %s CASCADE" % (viewname,))
